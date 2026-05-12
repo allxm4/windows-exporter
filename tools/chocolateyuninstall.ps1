@@ -1,6 +1,6 @@
-﻿$ErrorActionPreference = 'Stop';
+$ErrorActionPreference = 'Stop';
 
-$packageName = 'prometheus-windows-exporter.install'
+$packageName = 'windows-exporter'
 $softwareName = 'windows_exporter*'
 $installerType = 'MSI'
 
