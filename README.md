@@ -1,19 +1,37 @@
-# Prometheus Windows Exporter Chocolatey Package
+# Windows Exporter Chocolatey Package
 
 ## Contents
 
-Chocolatey scripts to install the Prometheus exporter for Windows machines
+Chocolatey scripts to install the Prometheus exporter for Windows machines.
 
 ## Description
 
-The scripts in this package are used by Chocolatey, the package manager for Windows. This repository _only_ contains said
-Chocolatey scripts. The exporter itself is maintained at the project page here:
+This is a community-maintained Chocolatey package for the Prometheus Windows Exporter. The scripts in this repository are used by Chocolatey, the package manager for Windows.
+
+The exporter itself is maintained at the project page here:
 [https://github.com/prometheus-community/windows_exporter/](https://github.com/prometheus-community/windows_exporter/)
 
-See [https://chocolatey.org/packages/prometheus-windows-exporter.install](https://chocolatey.org/packages/prometheus-windows-exporter.install) for details on Chocolatey and usage.
+## Contributing
 
-## Tl;dr Usage
+Contributions are welcome! Please feel free to:
+- Submit issues for bugs or feature requests
+- Open pull requests to update the package
 
-To install the exporter with chocolatey, run:
+## Package Parameters
 
-`choco install prometheus-windows-exporter.install`
+The installer supports several parameters for customization:
+
+- `EnabledCollectors` - Comma-separated list of collectors to enable
+- `ConfigFile` - Path to custom config file
+- `ListenPort` - Port for metrics endpoint (default: 9182)
+- `ListenAddress` - IP address to bind to
+- `ExtraFlags` - Additional CLI flags
+
+Example: `choco install windows-exporter --params '"/ListenPort:9100 /EnabledCollectors:cpu,memory,disk"'`
+
+## Usage
+
+To install the exporter with Chocolatey, run:
+
+```powershell
+choco install windows-exporter
