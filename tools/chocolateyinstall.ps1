@@ -1,9 +1,20 @@
-﻿$ErrorActionPreference = 'Stop';
+$ErrorActionPreference = 'Stop';
 
-$packageName= 'prometheus-windows-exporter.install'
-$toolsDir   = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
-$version    = "0.30.5"
-$url64      = "https://github.com/prometheus-community/windows_exporter/releases/download/v$version/windows_exporter-$version-amd64.msi"
+$packageName = 'windows-exporter'
+$toolsDir    = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
+$version     = "0.31.6"
+
+# Detect architecture
+$is64bit = [System.Environment]::Is64BitOperatingSystem
+$isArm64 = $env:PROCESSOR_ARCHITECTURE -eq 'ARM64'
+
+if ($isArm64) {
+  $url = "https://github.com/prometheus-community/windows_exporter/releases/download/v$version/windows_exporter-$version-arm64.msi"
+  $checksum = 'cd6a1bbe97e2b6e5612d3026f4657d049a7f73c54b528b98e4e2b2a865a9511a'
+} else {
+  $url = "https://github.com/prometheus-community/windows_exporter/releases/download/v$version/windows_exporter-$version-amd64.msi"
+  $checksum = '767324dc7ea8e6b8b99f610e2fb9f36d029c8f673a94b3d9f5f2c3c579be0b6d'
+}
 
 $pp = Get-PackageParameters
 
@@ -64,18 +75,18 @@ if ($pp["Remove"] -ne $null -and $pp["Remove"] -ne '') {
 }
 
 $packageArgs = @{
-  packageName   = $packageName
-  unzipLocation = $toolsDir
-  fileType      = 'MSI'
-  url64bit      = $url64
+  packageName    = $packageName
+  unzipLocation  = $toolsDir
+  fileType       = 'MSI'
+  url            = $url
 
-  softwareName  = 'windows_exporter*'
+  softwareName   = 'windows_exporter*'
 
-  checksum64    = '59483778DA38CB5D74DA4B8B75CF4E3F8B3EC1F833819AB37B290D7B8A6925F7'
-  checksumType64= 'sha256'
+  checksum       = $checksum
+  checksumType   = 'sha256'
 
-  silentArgs    = $silentArgs
-  validExitCodes= @(0, 3010, 1641)
+  silentArgs     = $silentArgs
+  validExitCodes = @(0, 3010, 1641)
 }
 
 Install-ChocolateyPackage @packageArgs
