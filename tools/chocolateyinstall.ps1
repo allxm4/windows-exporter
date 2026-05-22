@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop';
 
 $packageName = 'windows-exporter'
 $toolsDir    = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
-$version     = "0.31.6"
+$version     = "0.31.7"
 
 # Detect architecture
 $is64bit = [System.Environment]::Is64BitOperatingSystem
@@ -10,10 +10,10 @@ $isArm64 = $env:PROCESSOR_ARCHITECTURE -eq 'ARM64'
 
 if ($isArm64) {
   $url = "https://github.com/prometheus-community/windows_exporter/releases/download/v$version/windows_exporter-$version-arm64.msi"
-  $checksum = 'cd6a1bbe97e2b6e5612d3026f4657d049a7f73c54b528b98e4e2b2a865a9511a'
+  $checksum = '7793b655cd7a3feb621f67ac48e5a2d409f8ec65c396bd3cac571278d48685af'
 } else {
   $url = "https://github.com/prometheus-community/windows_exporter/releases/download/v$version/windows_exporter-$version-amd64.msi"
-  $checksum = '767324dc7ea8e6b8b99f610e2fb9f36d029c8f673a94b3d9f5f2c3c579be0b6d'
+  $checksum = 'd29114fb7ae6af2865a9f1c4be7fdccc2b9fbbb4366a811b620bc85c983d0007'
 }
 
 $pp = Get-PackageParameters
