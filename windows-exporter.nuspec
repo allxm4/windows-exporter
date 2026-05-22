@@ -3,14 +3,14 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>windows-exporter</id>
-    <version>0.31.6</version>
+    <version>0.31.7</version>
     <packageSourceUrl>https://github.com/allxm4/windows-exporter</packageSourceUrl>
     <owners>allxm4</owners>
     <title>Prometheus Windows exporter</title>
     <authors>Martin Lindhe, The Prometheus Authors</authors>
     <projectUrl>https://github.com/prometheus-community/windows_exporter</projectUrl>
     <iconUrl>https://pbs.twimg.com/profile_images/588945677599780865/mrhc1gSh.png</iconUrl>
-    <licenseUrl>https://github.com/prometheus-community/windows_exporter/blob/v0.31.6/LICENSE</licenseUrl>
+    <licenseUrl>https://github.com/prometheus-community/windows_exporter/blob/v0.31.7/LICENSE</licenseUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <projectSourceUrl>https://github.com/prometheus-community/windows_exporter</projectSourceUrl>
     <tags>prometheus windows exporter admin monitoring</tags>
@@ -40,15 +40,15 @@ For example: `--params '"/EnabledCollectors:cpu,disk,memory /ListenPort:9100"'`.
 ### Collectors
 
 A table of the provided collectors, including those enabled by default, is available at the project page here:
-[https://github.com/prometheus-community/windows_exporter/blob/v0.31.6/README.md#collectors](https://github.com/prometheus-community/windows_exporter/blob/v0.31.6/README.md#collectors)
+[https://github.com/prometheus-community/windows_exporter/blob/v0.31.7/README.md#collectors](https://github.com/prometheus-community/windows_exporter/blob/v0.31.7/README.md#collectors)
 
 ### More Information
 
 For more information, see the project README:
-[https://github.com/prometheus-community/windows_exporter/blob/v0.31.6/README.md](https://github.com/prometheus-community/windows_exporter/blob/v0.31.6/README.md)
+[https://github.com/prometheus-community/windows_exporter/blob/v0.31.7/README.md](https://github.com/prometheus-community/windows_exporter/blob/v0.31.7/README.md)
 
 </description>
-    <releaseNotes>https://github.com/prometheus-community/windows_exporter/releases/tag/v0.31.6</releaseNotes>
+    <releaseNotes>https://github.com/prometheus-community/windows_exporter/releases/tag/v0.31.7</releaseNotes>
     <dependencies>
       <dependency id="chocolatey-core.extension" version="1.1.0" />
     </dependencies>
