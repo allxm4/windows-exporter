@@ -47,9 +47,9 @@ The following parameters customize the installation:
 
 ### Installation Example
 
-    choco install windows-exporter --params '"/EnabledCollectors:cpu,disk,memory /ListenPort:9100"'
+    choco install windows-exporter --params '"/EnabledCollectors:cpu,logical_disk,memory /ListenPort:9100"'
 
-This example enables the CPU, disk, and memory collectors and configures port 9100.
+This example enables the CPU, logical disk, and memory collectors and configures port 9100.
 
 ## Collectors
 
