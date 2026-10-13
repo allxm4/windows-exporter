@@ -10,10 +10,10 @@ $isArm64 = $env:PROCESSOR_ARCHITECTURE -eq 'ARM64'
 
 if ($isArm64) {
   $url = "https://github.com/prometheus-community/windows_exporter/releases/download/v$version/windows_exporter-$version-arm64.msi"
-  $checksum = '7793b655cd7a3feb621f67ac48e5a2d409f8ec65c396bd3cac571278d48685af'
+  $checksum = 'ed3f9a5f55764c1fec5086f70310209c860519f74f12f57e55574c8e46b58d34'
 } else {
   $url = "https://github.com/prometheus-community/windows_exporter/releases/download/v$version/windows_exporter-$version-amd64.msi"
-  $checksum = 'd29114fb7ae6af2865a9f1c4be7fdccc2b9fbbb4366a811b620bc85c983d0007'
+  $checksum = '1e8a3898e8febaa475e008ffd2e729e1bef84ecbcb6875910546ee0798e96126'
 }
 
 $pp = Get-PackageParameters
