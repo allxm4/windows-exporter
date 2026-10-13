@@ -36,7 +36,7 @@ The following package parameters can be set:
 - `Remove` - Disables features within the windows_exporter installer. Supported values: `FirewallException`.
 
 These parameters can be passed to the installer with the use of `--params`.
-For example: `--params '"/EnabledCollectors:cpu,disk,memory /ListenPort:9100"'`.
+For example: `--params '"/EnabledCollectors:cpu,logical_disk,memory /ListenPort:9100"'`.
 
 ### Collectors
 
