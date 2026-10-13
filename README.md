@@ -1,51 +1,85 @@
+
 # Windows Exporter Chocolatey Package
 
-## Contents
+Chocolatey installation and management scripts for Prometheus Windows Exporter.
 
-Chocolatey scripts to install the Prometheus exporter for Windows machines.
+**Version:** 0.31.9
 
 ## Description
 
-This is a community-maintained Chocolatey package for the Prometheus Windows Exporter. The scripts in this repository are used by Chocolatey, the package manager for Windows.
+This repository contains a community-maintained Chocolatey package for [Windows Exporter](https://github.com/prometheus-community/windows_exporter), a Prometheus exporter that exposes Windows system metrics for monitoring.
 
-**Package:** [https://community.chocolatey.org/packages/windows-exporter](https://community.chocolatey.org/packages/windows-exporter)
+- **Chocolatey Package:** [windows-exporter](https://community.chocolatey.org/packages/windows-exporter)
+- **Upstream Project:** [prometheus-community/windows_exporter](https://github.com/prometheus-community/windows_exporter)
+- **Release Notes:** [v0.31.9](https://github.com/prometheus-community/windows_exporter/releases/tag/v0.31.9)
 
-The exporter itself is maintained at the project page here:
-[https://github.com/prometheus-community/windows_exporter/](https://github.com/prometheus-community/windows_exporter/)
+## Installation
 
-## Contributing
+Once the package is available from a configured Chocolatey source, install it using:
 
-Contributions are welcome! Please feel free to:
-- Submit issues for bugs or feature requests
-- Open pull requests to update the package
+    choco install windows-exporter -y
+
+To install a specific version:
+
+    choco install windows-exporter --version=0.31.9 -y
+
+To upgrade an existing installation:
+
+    choco upgrade windows-exporter -y
 
 ## Package Parameters
 
-The installer supports several parameters for customization:
+The following parameters customize the installation:
 
-- `EnabledCollectors` - As the `--collectors.enabled` flag, provide a comma-separated list of enabled collectors.
-- `ConfigFile` - Use the `--config.file` flag to specify a config file. If empty, no config file will be set. The special value config.yaml sets the path to the config.yaml at install dir.
-- `ListenAddress` - The IP address to bind to. Defaults to an empty string (any local address).
-- `ListenPort` - The port to bind to. Defaults to 9182.
-- `MetricsPath` - The path at which to serve metrics. Defaults to `/metrics`.
-- `TextFileDirs` - Use the `--collector.textfile.directories` flag to specify one or more directories, separated by commas, where the collector should read text files containing metrics.
-- `TextFileDir` - Alternative flag for `TextFileDirs` provided for backwards compatibility.
-- `RemoteAddresses` - Allows setting comma separated remote IP addresses for the Windows Firewall exception (allow list). Defaults to an empty string (any remote address).
-- `ExtraFlags` - Allows passing full CLI flags. Defaults to an empty string. For `--collectors.enabled` and `--config.file`, use the specialized properties `EnabledCollectors` and `ConfigFile`.
-- `AddLocal` - Enables features within the windows_exporter installer. Supported values: `FirewallException`.
-- `Remove` - Disables features within the windows_exporter installer. Supported values: `FirewallException`.
+| Parameter | Description |
+|-----------|-------------|
+| `EnabledCollectors` | Comma-separated list of collectors to enable. |
+| `ConfigFile` | Configuration file path. Use `config.yaml` for the file in the installation directory. |
+| `ListenAddress` | IP address to bind to. Empty means all local addresses. |
+| `ListenPort` | Metrics endpoint port. Default: `9182`. |
+| `MetricsPath` | Metrics endpoint path. Default: `/metrics`. |
+| `TextFileDirs` | Comma-separated directories containing textfile collector metrics. |
+| `TextFileDir` | Legacy alternative to `TextFileDirs`. |
+| `RemoteAddresses` | Comma-separated IP addresses permitted by the Windows Firewall exception. Empty allows any remote address. |
+| `ExtraFlags` | Additional exporter CLI options. Use dedicated parameters for collectors and configuration files. |
+| `AddLocal` | Enable installer features such as `FirewallException`. |
+| `Remove` | Disable installer features such as `FirewallException`. |
 
-These parameters can be passed to the installer with the use of `--params`.
-For example: `choco install windows-exporter --params '"/EnabledCollectors:cpu,disk,memory /ListenPort:9100"'`
+### Installation Example
+
+    choco install windows-exporter --params '"/EnabledCollectors:cpu,disk,memory /ListenPort:9100"'
+
+This example enables the CPU, disk, and memory collectors and configures port 9100.
 
 ## Collectors
 
-A table of the provided collectors, including those enabled by default, is available at the project page here:
-[https://github.com/prometheus-community/windows_exporter/blob/v0.31.7/README.md#collectors](https://github.com/prometheus-community/windows_exporter/blob/v0.31.7/README.md#collectors)
+Windows Exporter provides collectors for Windows system and service metrics.
 
-## Usage
+See the [v0.31.9 collector documentation](https://github.com/prometheus-community/windows_exporter/blob/v0.31.9/README.md#collectors) for available collectors and their default states.
 
-To install the exporter with Chocolatey, run:
+## Supported Architectures
 
-```powershell
-choco install windows-exporter
+The Chocolatey package supports:
+
+- AMD64 (x86-64)
+- ARM64
+
+The installation script selects the appropriate MSI installer for the system architecture.
+
+## Contributing
+
+Contributions are welcome.
+
+- Report bugs or suggest improvements through GitHub Issues.
+- Submit pull requests for package updates and fixes.
+- Verify installer URLs and SHA256 checksums when updating versions.
+
+## Additional Information
+
+For exporter configuration, usage, and troubleshooting, refer to the [official Windows Exporter documentation](https://github.com/prometheus-community/windows_exporter/blob/v0.31.9/README.md).
+
+## License
+
+Windows Exporter is maintained by the Prometheus community.
+
+See the [upstream license](https://github.com/prometheus-community/windows_exporter/blob/v0.31.9/LICENSE).
