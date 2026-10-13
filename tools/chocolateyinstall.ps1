@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop';
 
 $packageName = 'windows-exporter'
 $toolsDir    = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
-$version     = "0.31.7"
+$version     = "0.31.9"
 
 # Detect architecture
 $is64bit = [System.Environment]::Is64BitOperatingSystem
