@@ -6,7 +6,8 @@ Installs, checks and uninstalls the package from a local folder.
 For disposable CI runners only: it installs and removes software and a Windows service.
   1. Install with default parameters, check service, metrics, version and architecture, uninstall.
   2. Install with package parameters and check that they reach the service, uninstall.
-  3. Unless -SkipUpgradeTest: install the published version and upgrade it to this package.
+  3. Install with paths that contain spaces and [defaults] in EnabledCollectors, uninstall.
+  4. Unless -SkipUpgradeTest: install the published version and upgrade it to this package.
 #>
 param(
   [Parameter(Mandatory = $true)] [string] $PackageDir,
@@ -41,14 +42,13 @@ function Get-UninstallEntry {
     Where-Object { $_.PSObject.Properties['DisplayName'] -and $_.DisplayName -like 'windows_exporter*' })
 }
 
-function Get-BuildInfo([int] $Port) {
+function Get-Metrics([int] $Port = 9182) {
   $deadline = (Get-Date).AddSeconds(120)
   while ($true) {
     try {
       $content = (Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$Port/metrics" -TimeoutSec 30).Content
       if ($content -is [byte[]]) { $content = [Text.Encoding]::UTF8.GetString($content) }
-      $line = $content -split "`n" | Where-Object { $_ -like 'windows_exporter_build_info{*' } | Select-Object -First 1
-      if ($line) { return $line }
+      if ($content -match 'windows_exporter_build_info\{') { return $content }
       throw 'no windows_exporter_build_info in /metrics'
     } catch {
       if ((Get-Date) -gt $deadline) { throw "No metrics on port ${Port}: $_" }
@@ -57,12 +57,16 @@ function Get-BuildInfo([int] $Port) {
   }
 }
 
+function Get-ServiceCommandLine {
+  (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\$serviceName").ImagePath
+}
+
 function Assert-Installed([string] $Version = $exporterVersion, [int] $Port = 9182) {
   $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
   if (-not $service) { throw "Service $serviceName was not created" }
   $service.WaitForStatus('Running', [TimeSpan]::FromSeconds(60))
 
-  $buildInfo = Get-BuildInfo $Port
+  $buildInfo = (Get-Metrics $Port) -split "`n" | Where-Object { $_ -like 'windows_exporter_build_info{*' } | Select-Object -First 1
   if ($buildInfo -notmatch "version=`"v?$([regex]::Escape($Version))`"") { throw "Expected version $Version, got: $buildInfo" }
   if ($buildInfo -notmatch "goarch=`"$ExpectedArch`"") { throw "Expected goarch $ExpectedArch, got: $buildInfo" }
 
@@ -92,8 +96,26 @@ try {
   Write-Host "`n=== Install with package parameters ===" -ForegroundColor Yellow
   Invoke-Choco install $packageId --version $packageVersion --source $sources '--params=/ListenPort:9100 /EnabledCollectors:cpu,memory'
   Assert-Installed -Port 9100
-  $imagePath = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\$serviceName").ImagePath
+  $imagePath = Get-ServiceCommandLine
   if ($imagePath -notlike '*cpu,memory*') { throw "EnabledCollectors did not reach the service: $imagePath" }
+  Invoke-Choco uninstall $packageId
+  Assert-Removed
+
+  Write-Host "`n=== Install with paths that contain spaces and [defaults] ===" -ForegroundColor Yellow
+  $spaced = Join-Path $env:SystemDrive 'windows exporter test'
+  New-Item -ItemType Directory -Force -Path "$spaced\textfile inputs" | Out-Null
+  [IO.File]::WriteAllText("$spaced\config.yaml", "log:`n  level: info`n")
+  [IO.File]::WriteAllText("$spaced\textfile inputs\test.prom", "package_test_metric 1`n")
+  Invoke-Choco install $packageId --version $packageVersion --source $sources "--params=/ConfigFile:$spaced\config.yaml /TextFileDirs:$spaced\textfile inputs /EnabledCollectors:[defaults],process,textfile"
+  Assert-Installed
+  $imagePath = Get-ServiceCommandLine
+  foreach ($expected in "--config.file=`"$spaced\config.yaml`"", "--collector.textfile.directories=`"$spaced\textfile inputs`"", '--collectors.enabled [defaults],process,textfile') {
+    if (-not $imagePath.Contains($expected)) { throw "Service command line lacks '$expected': $imagePath" }
+  }
+  $metrics = Get-Metrics
+  if ($metrics -notmatch '(?m)^package_test_metric 1') { throw 'The textfile collector did not read the folder with spaces' }
+  if ($metrics -notmatch '(?m)^windows_process_') { throw 'The process collector added to [defaults] is not running' }
+  Write-Host "OK: service command line is $imagePath" -ForegroundColor Green
   Invoke-Choco uninstall $packageId
   Assert-Removed
 

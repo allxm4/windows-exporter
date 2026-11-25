@@ -173,6 +173,21 @@ jobs:
           git tag "v$VERSION"
           git push --atomic origin HEAD:master "refs/tags/v$VERSION"
 
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.update.outputs.version }}
+        run: |
+          upstream=$(echo "$VERSION" | cut -d. -f1-3)
+          if [ "$upstream" = "$VERSION" ]; then
+            change="Updated to upstream [v$upstream](https://github.com/prometheus-community/windows_exporter/releases/tag/v$upstream)"
+          else
+            change="Republished upstream [v$upstream](https://github.com/prometheus-community/windows_exporter/releases/tag/v$upstream) as a package fix"
+          fi
+          printf 'Release v%s of prometheus-windows-exporter.install Chocolatey package\n\n- %s\n- Tested on x64 and ARM64 Windows\n' "$VERSION" "$change" > notes.md
+          gh release create "v$VERSION" --verify-tag --title "Windows Exporter v$VERSION" --notes-file notes.md
+
   # Scheduled workflows stop after 60 days without repository activity; re-enabling resets that (unverified).
   keepalive:
     if: github.event_name == 'schedule'
