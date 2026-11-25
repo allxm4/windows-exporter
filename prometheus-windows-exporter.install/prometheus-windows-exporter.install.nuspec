@@ -28,7 +28,7 @@ The metrics are served at `http://localhost:9182/metrics`. No Windows Firewall r
 - `/ConfigFile:` - Path of a YAML config file, as the `--config.file` flag. The file must exist before installing. Without this parameter, the service uses `config.yaml` in the install folder (`C:\Program Files\windows_exporter\config.yaml`), which the installer creates empty if it doesn't exist.
 - `/ListenAddress:` - IP address to listen on. Defaults to all addresses.
 - `/ListenPort:` - Port to listen on. Defaults to `9182`. The firewall rule of `/AddLocal:FirewallException` uses the same port.
-- `/MetricsPath:` - URL path of the metrics, as the `--telemetry.path` flag. Defaults to `/metrics`.
+- `/MetricsPath:` - URL path of the metrics, as the `--telemetry.path` flag. Must start with `/` and must not be `/health`. Defaults to `/metrics`.
 - `/TextFileDirs:` - Comma-separated folders the `textfile` collector reads `.prom` files from, as the `--collector.textfile.directories` flag. Defaults to `C:\Program Files\windows_exporter\textfile_inputs`. The `textfile` collector is not enabled by default, so add it to `/EnabledCollectors:`.
 - `/TextFileDir:` - Older name of `/TextFileDirs:`, ignored when `/TextFileDirs:` is set.
 - `/RemoteAddresses:` - Comma-separated remote addresses the firewall rule allows, for example `10.0.0.0/8,192.168.1.10`. Only used with `/AddLocal:FirewallException`. Defaults to any address.
@@ -45,6 +45,13 @@ Quote `--params` as shown, double quotes outside and single quotes inside. This 
 - All windows_exporter flags and the config file format: [Flags](https://github.com/prometheus-community/windows_exporter/blob/v0.30.5/README.md#flags) and [Using a configuration file](https://github.com/prometheus-community/windows_exporter/blob/v0.30.5/README.md#using-a-configuration-file). Use `/ExtraFlags:` or the config file for flags that have no package parameter.
 - Collectors and their options: [Collectors](https://github.com/prometheus-community/windows_exporter/blob/v0.30.5/README.md#collectors).
 - Installer properties that have no package parameter, such as `APPLICATIONFOLDER` (install folder) or `SERVICE_ACCOUNT`, are listed under [Installation](https://github.com/prometheus-community/windows_exporter/blob/v0.30.5/README.md#installation). Pass them with `--install-arguments`, for example `--install-arguments "'APPLICATIONFOLDER=D:\windows_exporter'"`.
+
+### Security
+
+- The exporter serves its metrics over plain HTTP without authentication, on all addresses unless `/ListenAddress:` is set.
+- No firewall rule is created unless you pass `/AddLocal:FirewallException`. When you do, limit it to your Prometheus server, for example `/AddLocal:FirewallException /RemoteAddresses:10.0.0.5`.
+- For TLS or basic authentication, use a [web configuration file](https://github.com/prometheus/exporter-toolkit/blob/master/docs/web-configuration.md), for example `/ExtraFlags:--web.config.file=C:\ProgramData\windows_exporter\web-config.yml`.
+- Package parameters are written to the Chocolatey log and the MSI log, so don't put passwords or other secrets in them. Keep those in the web configuration file.
 
 ### Upgrading
 

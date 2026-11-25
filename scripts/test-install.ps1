@@ -5,7 +5,8 @@ Installs, checks and uninstalls the package from a local folder.
 .DESCRIPTION
 For disposable CI runners only: it installs and removes software and a Windows service.
   1. Install with default parameters, check service, metrics, version and architecture, uninstall.
-  2. Install with package parameters and check that they reach the service, uninstall.
+  2. Install with package parameters, including quotes in ExtraFlags, and check that they reach
+     the service, uninstall. Then check that a missing config file is refused.
   3. Install with paths that contain spaces and [defaults] in EnabledCollectors, uninstall.
   4. Unless -SkipUpgradeTest: install the published version and upgrade it to this package.
 #>
@@ -94,12 +95,24 @@ try {
   Assert-Removed
 
   Write-Host "`n=== Install with package parameters ===" -ForegroundColor Yellow
-  Invoke-Choco install $packageId --version $packageVersion --source $sources '--params=/ListenPort:9100 /EnabledCollectors:cpu,memory'
+  # \" because Windows PowerShell does not escape quotes inside native command arguments.
+  Invoke-Choco install $packageId --version $packageVersion --source $sources '--params=/ListenPort:9100 /EnabledCollectors:cpu,memory /ExtraFlags:--log.level=\"info\" --log.format=logfmt'
   Assert-Installed -Port 9100
   $imagePath = Get-ServiceCommandLine
-  if ($imagePath -notlike '*cpu,memory*') { throw "EnabledCollectors did not reach the service: $imagePath" }
+  foreach ($expected in '--collectors.enabled cpu,memory', '--log.level="info" --log.format=logfmt') {
+    if (-not $imagePath.Contains($expected)) { throw "Service command line lacks '$expected': $imagePath" }
+  }
   Invoke-Choco uninstall $packageId
   Assert-Removed
+
+  Write-Host "`n=== Reject a config file that does not exist ===" -ForegroundColor Yellow
+  $ErrorActionPreference = 'Continue'
+  & choco install $packageId --version $packageVersion --source $sources '--params=/ConfigFile:C:\missing\config.yaml' --yes --no-progress
+  $exitCode = $LASTEXITCODE
+  $ErrorActionPreference = 'Stop'
+  if ($exitCode -eq 0) { throw 'Installing with a missing config file should fail' }
+  if (Get-Service -Name $serviceName -ErrorAction SilentlyContinue) { throw 'The service was installed although the config file is missing' }
+  Write-Host 'OK: the install was refused before anything was installed' -ForegroundColor Green
 
   Write-Host "`n=== Install with paths that contain spaces and [defaults] ===" -ForegroundColor Yellow
   $spaced = Join-Path $env:SystemDrive 'windows exporter test'

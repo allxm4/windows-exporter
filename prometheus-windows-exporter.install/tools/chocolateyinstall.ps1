@@ -25,61 +25,73 @@ switch ($osArchitecture) {
   default { throw "windows_exporter is only available for AMD64 and ARM64 Windows, not '$osArchitecture'." }
 }
 
+# Quotes a value for the msiexec command line, where "" is a literal quote.
+function Format-MsiValue([string] $Value) { '"' + ($Value -replace '"', '""') + '"' }
+
 $pp = Get-PackageParameters
+
+$port = 0
+if ($pp["ListenPort"] -and -not ([int]::TryParse("$($pp["ListenPort"])", [ref]$port) -and $port -ge 1 -and $port -le 65535)) {
+  throw "ListenPort must be a number from 1 to 65535, not '$($pp["ListenPort"])'."
+}
+# The installer only creates its default config.yaml; any other config file must already exist.
+if ($pp["ConfigFile"] -and $pp["ConfigFile"] -cne 'config.yaml' -and -not (Test-Path -LiteralPath "$($pp["ConfigFile"])" -PathType Leaf)) {
+  throw "ConfigFile '$($pp["ConfigFile"])' does not exist. Create it before installing."
+}
 
 $silentArgs = "/quiet /norestart /l*v `"$($env:TEMP)\$($packageName).$($version).MsiInstall.log`""
 
 if ($pp["EnabledCollectors"] -ne $null -and $pp["EnabledCollectors"] -ne '') {
-  $silentArgs += " ENABLED_COLLECTORS=`"$($pp["EnabledCollectors"])`""
+  $silentArgs += " ENABLED_COLLECTORS=$(Format-MsiValue $pp["EnabledCollectors"])"
   Write-Host "Collectors: `'$($pp["EnabledCollectors"])`'"
 }
 
 if ($pp["ConfigFile"] -ne $null -and $pp["ConfigFile"] -ne '') {
-  $silentArgs += " CONFIG_FILE=`"$($pp["ConfigFile"])`""
+  $silentArgs += " CONFIG_FILE=$(Format-MsiValue $pp["ConfigFile"])"
   Write-Host "Config File: `'$($pp["ConfigFile"])`'"
 }
 
 if ($pp["ListenAddress"] -ne $null -and $pp["ListenAddress"] -ne '') {
-  $silentArgs += " LISTEN_ADDR=`"$($pp["ListenAddress"])`""
+  $silentArgs += " LISTEN_ADDR=$(Format-MsiValue $pp["ListenAddress"])"
   Write-Host "Listen Address: `'$($pp["ListenAddress"])`'"
 }
 
 if ($pp["ListenPort"] -ne $null -and $pp["ListenPort"] -ne '') {
-  $silentArgs += " LISTEN_PORT=`"$($pp["ListenPort"])`""
+  $silentArgs += " LISTEN_PORT=$(Format-MsiValue $pp["ListenPort"])"
   Write-Host "Listen Port: `'$($pp["ListenPort"])`'"
 }
 
 if ($pp["MetricsPath"] -ne $null -and $pp["MetricsPath"] -ne '') {
-  $silentArgs += " METRICS_PATH=`"$($pp["MetricsPath"])`""
+  $silentArgs += " METRICS_PATH=$(Format-MsiValue $pp["MetricsPath"])"
   Write-Host "Metrics Path: `'$($pp["MetricsPath"])`'"
 }
 
 if ($pp["TextFileDirs"] -ne $null -and $pp["TextFileDirs"] -ne '') {
-  $silentArgs += " TEXTFILE_DIRS=`"$($pp["TextFileDirs"])`""
+  $silentArgs += " TEXTFILE_DIRS=$(Format-MsiValue $pp["TextFileDirs"])"
   Write-Host "Textfile Directories: `'$($pp["TextFileDirs"])`'"
 
 } elseif ($pp["TextFileDir"] -ne $null -and $pp["TextFileDir"] -ne '') {
-  $silentArgs += " TEXTFILE_DIRS=`"$($pp["TextFileDir"])`""
+  $silentArgs += " TEXTFILE_DIRS=$(Format-MsiValue $pp["TextFileDir"])"
   Write-Host "Textfile Directories: `'$($pp["TextFileDir"])`'"
 }
 
 if ($pp["RemoteAddresses"] -ne $null -and $pp["RemoteAddresses"] -ne '') {
-  $silentArgs += " REMOTE_ADDR=`"$($pp["RemoteAddresses"])`""
+  $silentArgs += " REMOTE_ADDR=$(Format-MsiValue $pp["RemoteAddresses"])"
   Write-Host "Remote Addresses: `'$($pp["RemoteAddresses"])`'"
 }
 
 if ($pp["ExtraFlags"] -ne $null -and $pp["ExtraFlags"] -ne '') {
-  $silentArgs += " EXTRA_FLAGS=`"$($pp["ExtraFlags"])`""
+  $silentArgs += " EXTRA_FLAGS=$(Format-MsiValue $pp["ExtraFlags"])"
   Write-Host "Extra Flags: `'$($pp["ExtraFlags"])`'"
 }
 
 if ($pp["AddLocal"] -ne $null -and $pp["AddLocal"] -ne '') {
-  $silentArgs += " ADDLOCAL=`"$($pp["AddLocal"])`""
+  $silentArgs += " ADDLOCAL=$(Format-MsiValue $pp["AddLocal"])"
   Write-Host "Add Local: `'$($pp["AddLocal"])`'"
 }
 
 if ($pp["Remove"] -ne $null -and $pp["Remove"] -ne '') {
-  $silentArgs += " REMOVE=`"$($pp["Remove"])`""
+  $silentArgs += " REMOVE=$(Format-MsiValue $pp["Remove"])"
   Write-Host "Remove: `'$($pp["Remove"])`'"
 }
 
@@ -99,3 +111,13 @@ $packageArgs = @{
 }
 
 Install-ChocolateyPackage @packageArgs
+
+# The MSI starts the service without waiting for it, so check that the exporter keeps running.
+$running = 0
+for ($i = 0; $i -lt 15 -and $running -lt 3; $i++) {
+  Start-Sleep -Seconds 2
+  $running = if ((Get-Service -Name 'windows_exporter' -ErrorAction SilentlyContinue).Status -eq 'Running') { $running + 1 } else { 0 }
+}
+if ($running -lt 3) {
+  Write-Warning 'The windows_exporter service is not running. Check the package parameters and the config file; windows_exporter logs its errors to the Application log in Event Viewer.'
+}
