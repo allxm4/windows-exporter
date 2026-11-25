@@ -18,57 +18,41 @@
     <description>
 Prometheus exporter for Windows machines.
 
-The package installs the official MSI for the native OS architecture, AMD64 (x64) or ARM64, and runs the exporter as the `windows_exporter` Windows service. 32-bit Windows is not supported.
+Installs the official MSI for the native architecture, AMD64 (x64) or ARM64, as the `windows_exporter` Windows service. 32-bit Windows is not supported. Metrics are served at `http://localhost:9182/metrics`. No firewall rule is created by default.
 
-The metrics are served at `http://localhost:9182/metrics`. No Windows Firewall rule is created by default; add `/AddLocal:FirewallException` to let a remote Prometheus server scrape the machine.
+Full documentation: [package README](https://github.com/allxm4/windows-exporter#readme)
 
 ### Package parameters
 
-- `/EnabledCollectors:` - Comma-separated list of collectors, as the `--collectors.enabled` flag. `[defaults]` stands for the collectors enabled by default (`cpu`, `logical_disk`, `memory`, `net`, `os`, `physical_disk`, `service`, `system`), for example `/EnabledCollectors:[defaults],process`.
-- `/ConfigFile:` - Path of a YAML config file, as the `--config.file` flag. The file must exist before installing. Without this parameter, the service uses `config.yaml` in the install folder (`C:\Program Files\windows_exporter\config.yaml`), which the installer creates empty if it doesn't exist.
+- `/EnabledCollectors:` - Comma-separated collectors, as `--collectors.enabled`. `[defaults]` stands for the default collectors, for example `[defaults],process`.
+- `/ConfigFile:` - YAML config file, as `--config.file`. Must exist before installing. Defaults to `config.yaml` in the install folder.
 - `/ListenAddress:` - IP address to listen on. Defaults to all addresses.
-- `/ListenPort:` - Port to listen on. Defaults to `9182`. The firewall rule of `/AddLocal:FirewallException` uses the same port.
-- `/MetricsPath:` - URL path of the metrics, as the `--telemetry.path` flag. Must start with `/` and must not be `/health`. Defaults to `/metrics`.
-- `/TextFileDirs:` - Comma-separated folders the `textfile` collector reads `.prom` files from, as the `--collector.textfile.directories` flag. Defaults to `C:\Program Files\windows_exporter\textfile_inputs`. The `textfile` collector is not enabled by default, so add it to `/EnabledCollectors:`.
-- `/TextFileDir:` - Older name of `/TextFileDirs:`, ignored when `/TextFileDirs:` is set.
-- `/RemoteAddresses:` - Comma-separated remote addresses the firewall rule allows, for example `10.0.0.0/8,192.168.1.10`. Only used with `/AddLocal:FirewallException`. Defaults to any address.
-- `/ExtraFlags:` - Other windows_exporter flags, separated by spaces, for example `/ExtraFlags:--log.level=debug`. A flag's value can't contain spaces or quotes; set such values in the config file. Don't pass `--config.file` here (the installation fails) or `--collectors.enabled`; use `/ConfigFile:` and `/EnabledCollectors:`.
-- `/AddLocal:` - Enables an installer feature. Supported value: `FirewallException`, an inbound Windows Firewall rule for the exporter.
-- `/Remove:` - Disables an installer feature. Supported value: `FirewallException`.
+- `/ListenPort:` - Port to listen on, 1 to 65535. Defaults to `9182`.
+- `/MetricsPath:` - URL path of the metrics, as `--telemetry.path`. Must start with `/` and must not be `/health`. Defaults to `/metrics`.
+- `/TextFileDirs:` - Comma-separated folders for the `textfile` collector, which is not enabled by default. Defaults to `textfile_inputs` in the install folder.
+- `/TextFileDir:` - Older name of `/TextFileDirs:`.
+- `/RemoteAddresses:` - Comma-separated remote addresses the firewall rule allows. Only used with `/AddLocal:FirewallException`.
+- `/ExtraFlags:` - Other windows_exporter flags, separated by spaces, for example `--log.level=debug`. A flag's value can't contain spaces or quotes. Not for `--config.file` or `--collectors.enabled`.
+- `/AddLocal:FirewallException` - Creates an inbound Windows Firewall rule for the exporter.
+- `/Remove:FirewallException` - Disables that installer feature.
 
 Example: `choco install prometheus-windows-exporter.install --params "'/EnabledCollectors:cpu,logical_disk,memory,os /ListenPort:9100 /AddLocal:FirewallException'"`
 
-Quote `--params` as shown, double quotes outside and single quotes inside. This works in PowerShell and in cmd. Paths may contain spaces; comma-separated lists must not. Package parameters take priority over the same settings in the config file.
-
-### More options
-
-- All windows_exporter flags and the config file format: [Flags](https://github.com/prometheus-community/windows_exporter/blob/v0.30.5/README.md#flags) and [Using a configuration file](https://github.com/prometheus-community/windows_exporter/blob/v0.30.5/README.md#using-a-configuration-file). Use `/ExtraFlags:` or the config file for flags that have no package parameter.
-- Collectors and their options: [Collectors](https://github.com/prometheus-community/windows_exporter/blob/v0.30.5/README.md#collectors).
-- Installer properties that have no package parameter, such as `APPLICATIONFOLDER` (install folder) or `SERVICE_ACCOUNT`, are listed under [Installation](https://github.com/prometheus-community/windows_exporter/blob/v0.30.5/README.md#installation). Pass them with `--install-arguments`, for example `--install-arguments "'APPLICATIONFOLDER=D:\windows_exporter'"`.
-
-### Security
-
-- The exporter serves its metrics over plain HTTP without authentication, on all addresses unless `/ListenAddress:` is set.
-- No firewall rule is created unless you pass `/AddLocal:FirewallException`. When you do, limit it to your Prometheus server, for example `/AddLocal:FirewallException /RemoteAddresses:10.0.0.5`.
-- For TLS or basic authentication, use a [web configuration file](https://github.com/prometheus/exporter-toolkit/blob/master/docs/web-configuration.md), for example `/ExtraFlags:--web.config.file=C:\ProgramData\windows_exporter\web-config.yml`.
-- Package parameters are written to the Chocolatey log and the MSI log, so don't put passwords or other secrets in them. Keep those in the web configuration file.
+Paths may contain spaces; comma-separated lists must not. Package parameters take priority over the config file. All flags, collectors and installer properties are in the [windows_exporter README](https://github.com/prometheus-community/windows_exporter/blob/v0.30.5/README.md). Installer properties without a parameter, such as `APPLICATIONFOLDER`, can be passed with `--install-arguments`.
 
 ### Upgrading
 
-The installer does not keep your parameters: an upgrade reinstalls the service with only the parameters given to that upgrade. To keep your settings, do one of these:
+Upgrades don't keep package parameters. Enable the `useRememberedArgumentsForUpgrades` feature, pass the same `--params` again, or keep your settings in the config file.
 
-- Let Chocolatey reuse the `--params` and `--install-arguments` of the install for every upgrade: `choco feature enable --name="'useRememberedArgumentsForUpgrades'"`, or add `--use-remembered-arguments` to `choco upgrade`.
-- Pass the same `--params` to `choco upgrade`.
-- Keep your settings in `C:\Program Files\windows_exporter\config.yaml` instead. The installer leaves that file in place.
+New minor versions can remove collectors and settings and rename metrics, and the service won't start while a removed one is in use. Upgrading from 0.30.x: read the [0.31.0 release notes](https://github.com/prometheus-community/windows_exporter/releases/tag/v0.31.0) and the [0.32 upgrade guide](https://github.com/prometheus-community/windows_exporter/blob/main/docs/upgrade/0.32.md).
 
-New minor versions of windows_exporter can remove collectors and settings, and rename metrics. The service does not start if a removed collector or setting is still in use, so read the release notes before upgrading. Upgrading from 0.30.x: 0.31 removed the `cs` and `logon` collectors and remote config files, and validates config files strictly ([release notes](https://github.com/prometheus-community/windows_exporter/releases/tag/v0.31.0)). 0.32 removed the `thermalzone` collector and the `/version` endpoint, and renamed many metrics ([upgrade guide](https://github.com/prometheus-community/windows_exporter/blob/main/docs/upgrade/0.32.md)).
+### Security
 
-To stay on the installed version: `choco pin add --name="'prometheus-windows-exporter.install'"`.
+Metrics are served over plain HTTP without authentication. Limit the firewall rule with `/RemoteAddresses:`, and use `--web.config.file` for TLS or basic authentication. Don't put secrets in package parameters; they appear in the Chocolatey and MSI logs.
 
-### Reporting issues
+### Issues
 
-- Problems with the package, such as installing, upgrading or parameters: leave a comment on this page or use Contact Maintainers. Include the `choco` command you ran and `C:\ProgramData\chocolatey\logs\chocolatey.log`.
-- Problems with the exporter itself: [windows_exporter issues](https://github.com/prometheus-community/windows_exporter/issues).
+Package problems: leave a comment below or use Contact Maintainers, with your `choco` command and `chocolatey.log`. Exporter problems: [windows_exporter issues](https://github.com/prometheus-community/windows_exporter/issues).
 
 </description>
     <releaseNotes>https://github.com/prometheus-community/windows_exporter/releases/tag/v0.30.5</releaseNotes>

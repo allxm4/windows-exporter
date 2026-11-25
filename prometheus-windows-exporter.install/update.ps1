@@ -85,6 +85,12 @@ function global:au_BeforeUpdate {
   Assert-Msi $Latest.URLArm64 $Latest.ChecksumArm64
 }
 
+# Chocolatey rejects descriptions longer than 4000 characters (moderation rule CPMR0026).
+function global:au_AfterUpdate($Package) {
+  $length = ([xml](Get-Content $Package.NuspecPath -Raw -Encoding UTF8)).package.metadata.description.Length
+  if ($length -gt 4000) { throw "The nuspec description has $length characters; Chocolatey allows 4000." }
+}
+
 function global:au_SearchReplace {
   @{
     'tools\chocolateyinstall.ps1' = @{
