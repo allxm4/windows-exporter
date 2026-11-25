@@ -3,14 +3,14 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>prometheus-windows-exporter.install</id>
-    <version>0.30.5</version>
+    <version>0.32.1</version>
     <packageSourceUrl>https://github.com/allxm4/windows-exporter</packageSourceUrl>
     <owners>AllX</owners>
     <title>Prometheus Windows exporter (MSI Installer)</title>
     <authors>Martin Lindhe, Calle Pettersson</authors>
     <projectUrl>https://github.com/prometheus-community/windows_exporter</projectUrl>
     <iconUrl>https://cdn.jsdelivr.net/gh/allxm4/windows-exporter@master/icons/prometheus-windows-exporter.png</iconUrl>
-    <licenseUrl>https://github.com/prometheus-community/windows_exporter/blob/v0.30.5/LICENSE</licenseUrl>
+    <licenseUrl>https://github.com/prometheus-community/windows_exporter/blob/v0.32.1/LICENSE</licenseUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <projectSourceUrl>https://github.com/prometheus-community/windows_exporter</projectSourceUrl>
     <tags>prometheus-windows-exporter.install prometheus windows exporter admin monitoring</tags>
@@ -38,7 +38,7 @@ Full documentation: [package README](https://github.com/allxm4/windows-exporter#
 
 Example: `choco install prometheus-windows-exporter.install --params "'/EnabledCollectors:cpu,logical_disk,memory,os /ListenPort:9100 /AddLocal:FirewallException'"`
 
-Paths may contain spaces; comma-separated lists must not. Package parameters take priority over the config file. All flags, collectors and installer properties are in the [windows_exporter README](https://github.com/prometheus-community/windows_exporter/blob/v0.30.5/README.md). Installer properties without a parameter, such as `APPLICATIONFOLDER`, can be passed with `--install-arguments`.
+Paths may contain spaces; comma-separated lists must not. Package parameters take priority over the config file. All flags, collectors and installer properties are in the [windows_exporter README](https://github.com/prometheus-community/windows_exporter/blob/v0.32.1/README.md). Installer properties without a parameter, such as `APPLICATIONFOLDER`, can be passed with `--install-arguments`.
 
 ### Upgrading
 
@@ -55,7 +55,7 @@ Metrics are served over plain HTTP without authentication. Limit the firewall ru
 Package problems: leave a comment below or use Contact Maintainers, with your `choco` command and `chocolatey.log`. Exporter problems: [windows_exporter issues](https://github.com/prometheus-community/windows_exporter/issues).
 
 </description>
-    <releaseNotes>https://github.com/prometheus-community/windows_exporter/releases/tag/v0.30.5</releaseNotes>
+    <releaseNotes>https://github.com/prometheus-community/windows_exporter/releases/tag/v0.32.1</releaseNotes>
     <dependencies>
       <dependency id="chocolatey-core.extension" version="1.1.0" />
     </dependencies>

@@ -5,10 +5,10 @@ $toolsDir    = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
 $version     = $env:ChocolateyPackageVersion
 
 # Updated by update.ps1
-$url64         = 'https://github.com/prometheus-community/windows_exporter/releases/download/v0.30.5/windows_exporter-0.30.5-amd64.msi'
-$checksum64    = '59483778da38cb5d74da4b8b75cf4e3f8b3ec1f833819ab37b290d7b8a6925f7'
-$urlArm64      = 'https://github.com/prometheus-community/windows_exporter/releases/download/v0.30.5/windows_exporter-0.30.5-arm64.msi'
-$checksumArm64 = 'f37737993049901684be9daf763d54f74e7dd37f2e2c6ef57a738317aa77e30a'
+$url64         = 'https://github.com/prometheus-community/windows_exporter/releases/download/v0.32.1/windows_exporter-0.32.1-amd64.msi'
+$checksum64    = '8e1ade6a2fbcdeb4774c300b598667cd7888246be8fcc4b586d11b3680433981'
+$urlArm64      = 'https://github.com/prometheus-community/windows_exporter/releases/download/v0.32.1/windows_exporter-0.32.1-arm64.msi'
+$checksumArm64 = 'fb5fe27adee598d38015b7e5d619da75a805114c58af5946cdcc7151b5ff0e09'
 
 if ($env:chocolateyForceX86 -eq 'true') {
   throw 'windows_exporter is not available for 32-bit (x86). Install it without --x86.'
