@@ -71,7 +71,7 @@ function Assert-Installed([string] $Version = $exporterVersion, [int] $Port = 91
   if ($buildInfo -notmatch "version=`"v?$([regex]::Escape($Version))`"") { throw "Expected version $Version, got: $buildInfo" }
   if ($buildInfo -notmatch "goarch=`"$ExpectedArch`"") { throw "Expected goarch $ExpectedArch, got: $buildInfo" }
 
-  $entries = Get-UninstallEntry
+  $entries = @(Get-UninstallEntry)
   if ($entries.Count -ne 1) { throw "Expected 1 windows_exporter entry in Programs and Features, found $($entries.Count)" }
   Write-Host "OK: windows_exporter $Version ($ExpectedArch) is running on port $Port" -ForegroundColor Green
 }
@@ -80,7 +80,7 @@ function Assert-Removed {
   $deadline = (Get-Date).AddSeconds(60)
   while ((Get-Service -Name $serviceName -ErrorAction SilentlyContinue) -and (Get-Date) -lt $deadline) { Start-Sleep -Seconds 2 }
   if (Get-Service -Name $serviceName -ErrorAction SilentlyContinue) { throw "Service $serviceName still exists after uninstall" }
-  if ((Get-UninstallEntry).Count -ne 0) { throw 'windows_exporter is still in Programs and Features after uninstall' }
+  if (@(Get-UninstallEntry).Count -ne 0) { throw 'windows_exporter is still in Programs and Features after uninstall' }
   Write-Host 'OK: windows_exporter was removed' -ForegroundColor Green
 }
 
