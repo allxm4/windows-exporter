@@ -1,0 +1,186 @@
+name: Update
+
+# Daily: package the newest stable windows_exporter release that is at least 5 days old,
+# test it on x64 and ARM64 Windows, push it to Chocolatey and commit the updated files.
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+    inputs:
+      push:
+        description: Push the package to Chocolatey
+        type: boolean
+        default: false
+      force:
+        description: Republish the current version as a fix version (x.y.z.yyyyMMdd)
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: update
+  cancel-in-progress: false
+
+env:
+  PACKAGE_ID: prometheus-windows-exporter.install
+
+jobs:
+  update:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    outputs:
+      updated: ${{ steps.update.outputs.updated }}
+      version: ${{ steps.update.outputs.version }}
+      sha256: ${{ steps.update.outputs.sha256 }}
+    defaults:
+      run:
+        shell: powershell
+        working-directory: prometheus-windows-exporter.install
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Chocolatey-AU
+        run: |
+          choco install chocolatey-au --version 1.0.0 -y --no-progress
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+      - name: Update the package
+        id: update
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          .\update.ps1 -Force:($env:FORCE -eq 'true')
+          git diff --quiet -- .
+          if ($LASTEXITCODE -eq 0) {
+            Add-Content -Path $env:GITHUB_OUTPUT -Value 'updated=false' -Encoding Ascii
+            exit 0
+          }
+          $version = ([xml](Get-Content "$env:PACKAGE_ID.nuspec" -Raw)).package.metadata.version
+          $sha256  = (Get-FileHash "$env:PACKAGE_ID.$version.nupkg" -Algorithm SHA256).Hash
+          Add-Content -Path $env:GITHUB_OUTPUT -Value 'updated=true', "version=$version", "sha256=$sha256" -Encoding Ascii
+          git diff -- .
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: steps.update.outputs.updated == 'true'
+        with:
+          name: nupkg
+          path: prometheus-windows-exporter.install/*.nupkg
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: steps.update.outputs.updated == 'true'
+        with:
+          name: source
+          path: |
+            prometheus-windows-exporter.install/prometheus-windows-exporter.install.nuspec
+            prometheus-windows-exporter.install/tools/chocolateyinstall.ps1
+          if-no-files-found: error
+
+  test:
+    needs: update
+    if: needs.update.outputs.updated == 'true'
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            arch: amd64
+          # Published versions before 0.31 had no ARM64 support, so there is nothing to upgrade from.
+          - runner: windows-11-arm
+            arch: arm64
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: nupkg
+          path: ${{ runner.temp }}/nupkg
+
+      - name: Install, check and uninstall
+        shell: powershell
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+          .\scripts\test-install.ps1 -PackageDir "$env:RUNNER_TEMP\nupkg" -ExpectedArch $env:ARCH -LogDir "$env:RUNNER_TEMP\logs" -SkipUpgradeTest:($env:ARCH -eq 'arm64')
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: logs-${{ matrix.arch }}
+          path: ${{ runner.temp }}/logs
+          if-no-files-found: ignore
+
+  publish:
+    needs: [update, test]
+    if: github.ref == 'refs/heads/master' && (github.event_name == 'schedule' || inputs.push)
+    runs-on: windows-latest
+    permissions: {}
+    environment: chocolatey
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: nupkg
+          path: ${{ runner.temp }}/nupkg
+
+      - name: Push to Chocolatey
+        shell: powershell
+        env:
+          CHOCO_API_KEY: ${{ secrets.CHOCO_API_KEY }}
+          VERSION: ${{ needs.update.outputs.version }}
+          SHA256: ${{ needs.update.outputs.sha256 }}
+        run: |
+          if (-not $env:CHOCO_API_KEY) { throw 'The CHOCO_API_KEY secret is not set in the chocolatey environment' }
+          $nupkg = "$env:RUNNER_TEMP\nupkg\$env:PACKAGE_ID.$env:VERSION.nupkg"
+          if ((Get-FileHash $nupkg -Algorithm SHA256).Hash -ne $env:SHA256) { throw "$nupkg changed after it was built" }
+          choco push $nupkg --source https://push.chocolatey.org/ --api-key $env:CHOCO_API_KEY
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+
+  commit:
+    needs: [update, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: source
+          path: prometheus-windows-exporter.install
+
+      - name: Commit and tag
+        env:
+          VERSION: ${{ needs.update.outputs.version }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add prometheus-windows-exporter.install
+          git commit -m "Update to $VERSION"
+          git tag "v$VERSION"
+          git push --atomic origin HEAD:master "refs/tags/v$VERSION"
+
+  # Scheduled workflows stop after 60 days without repository activity; re-enabling resets that (unverified).
+  keepalive:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Re-enable this workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/$GITHUB_REPOSITORY/actions/workflows/update.yml/enable"

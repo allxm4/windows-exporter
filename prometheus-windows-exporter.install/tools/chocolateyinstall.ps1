@@ -1,19 +1,28 @@
-$ErrorActionPreference = 'Stop';
+﻿$ErrorActionPreference = 'Stop';
 
-$packageName = 'windows-exporter'
+$packageName = 'prometheus-windows-exporter.install'
 $toolsDir    = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
-$version     = "0.31.7"
+$version     = $env:ChocolateyPackageVersion
 
-# Detect architecture
-$is64bit = [System.Environment]::Is64BitOperatingSystem
-$isArm64 = $env:PROCESSOR_ARCHITECTURE -eq 'ARM64'
+# Updated by update.ps1
+$url64         = 'https://github.com/prometheus-community/windows_exporter/releases/download/v0.30.5/windows_exporter-0.30.5-amd64.msi'
+$checksum64    = '59483778da38cb5d74da4b8b75cf4e3f8b3ec1f833819ab37b290d7b8a6925f7'
+$urlArm64      = 'https://github.com/prometheus-community/windows_exporter/releases/download/v0.30.5/windows_exporter-0.30.5-arm64.msi'
+$checksumArm64 = 'f37737993049901684be9daf763d54f74e7dd37f2e2c6ef57a738317aa77e30a'
 
-if ($isArm64) {
-  $url = "https://github.com/prometheus-community/windows_exporter/releases/download/v$version/windows_exporter-$version-arm64.msi"
-  $checksum = '7793b655cd7a3feb621f67ac48e5a2d409f8ec65c396bd3cac571278d48685af'
-} else {
-  $url = "https://github.com/prometheus-community/windows_exporter/releases/download/v$version/windows_exporter-$version-amd64.msi"
-  $checksum = 'd29114fb7ae6af2865a9f1c4be7fdccc2b9fbbb4366a811b620bc85c983d0007'
+if ($env:chocolateyForceX86 -eq 'true') {
+  throw 'windows_exporter is not available for 32-bit (x86). Install it without --x86.'
+}
+
+# The system value is the native architecture, even when this process runs under x64 emulation on ARM64.
+$osArchitecture = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment' -Name 'PROCESSOR_ARCHITECTURE' -ErrorAction SilentlyContinue).PROCESSOR_ARCHITECTURE
+if (-not $osArchitecture) { $osArchitecture = $env:PROCESSOR_ARCHITEW6432 }
+if (-not $osArchitecture) { $osArchitecture = $env:PROCESSOR_ARCHITECTURE }
+
+switch ($osArchitecture) {
+  'AMD64' { $url = $url64;    $checksum = $checksum64 }
+  'ARM64' { $url = $urlArm64; $checksum = $checksumArm64 }
+  default { throw "windows_exporter is only available for AMD64 and ARM64 Windows, not '$osArchitecture'." }
 }
 
 $pp = Get-PackageParameters
